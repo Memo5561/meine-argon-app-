@@ -1,0 +1,59 @@
+name: Argon Android Developer & APK Builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: 'Was soll Argon in der App bauen oder ändern?'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  develop-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: JDK 17 einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Gradle Cache aktivieren
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Node.js & Gemini CLI installieren
+        run: npm install -g @google/gemini-cli@latest
+
+      - name: Argon Code generieren & mit Gradle verifizieren lassen
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          chmod +x ./gradlew
+          gemini -m gemini-4-argon --yolo -p "Du bist ein Senior Android Developer (Kotlin, Jetpack Compose). 
+          Setze folgende Anforderung im aktuellen Projekt um: ${{ inputs.prompt }}
+          WICHTIG: Führe nach deinen Code-Änderungen zwingend './gradlew assembleDebug' über die Shell aus. 
+          Falls der Build fehlschlägt, analysiere den Stacktrace, korrigiere den Code und wiederhole den Build, bis die APK erfolgreich erstellt wurde."
+
+      - name: Generierten Code ins Repo zurückpushen
+        run: |
+          git config user.name "gemini-argon-bot"
+          git config user.email "bot@github.com"
+          git add .
+          git diff --staged --quiet || (git commit -m "feat(ai): ${{ inputs.prompt }}" && git push)
+
+      - name: Direkt-Download als GitHub Release erstellen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="build-$(date +%Y%m%d-%H%M%S)"
+          gh release create "$TAG_NAME" app/build/outputs/apk/debug/app-debug.apk \
+            --title "Argon Build: $TAG_NAME" \
+            --notes "Automatisch gebaut für Prompt: ${{ inputs.prompt }}"
