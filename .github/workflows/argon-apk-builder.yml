@@ -26,23 +26,24 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Gradle Cache aktivieren
-        uses: gradle/actions/setup-gradle@v4
-
       - name: Node.js & Gemini CLI installieren
         run: npm install -g @google/gemini-cli@latest
 
-      - name: Argon Code generieren & mit Gradle verifizieren lassen
+      - name: Argon das Projekt komplett von Grund auf erstellen lassen
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CI: ""
         run: |
-          chmod +x ./gradlew
           gemini -m gemini-4-argon --yolo -p "Du bist ein Senior Android Developer (Kotlin, Jetpack Compose). 
-          Setze folgende Anforderung im aktuellen Projekt um: ${{ inputs.prompt }}
-          WICHTIG: Führe nach deinen Code-Änderungen zwingend './gradlew assembleDebug' über die Shell aus. 
-          Falls der Build fehlschlägt, analysiere den Stacktrace, korrigiere den Code und wiederhole den Build, bis die APK erfolgreich erstellt wurde."
+          Analysiere das aktuelle Repository. Falls es leer ist, erstelle eine komplette Android-Projektstruktur von Grund auf (Gradle-Dateien, AndroidManifest.xml, MainActivity.kt und UI-Code mit Jetpack Compose).
+          Setze folgenden App-Wunsch um: ${{ inputs.prompt }}."
 
-      - name: Generierten Code ins Repo zurückpushen
+      - name: App kompilieren (APK bauen)
+        run: |
+          chmod +x ./gradlew || true
+          ./gradlew assembleDebug
+
+      - name: Code ins Repo pushen
         run: |
           git config user.name "gemini-argon-bot"
           git config user.email "bot@github.com"
