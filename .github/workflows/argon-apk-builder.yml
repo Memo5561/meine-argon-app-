@@ -34,7 +34,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           CI: ""
         run: |
-          gemini -m gemini-4-argon --yolo -p "Du bist ein Senior Android Developer (Kotlin, Jetpack Compose). 
+          gemini -m gemini-4-argon --skip-trust --yolo -p "Du bist ein Senior Android Developer (Kotlin, Jetpack Compose). 
           Analysiere das aktuelle Repository. Falls es leer ist, erstelle eine komplette Android-Projektstruktur von Grund auf (Gradle-Dateien, AndroidManifest.xml, MainActivity.kt und UI-Code mit Jetpack Compose).
           Setze folgenden App-Wunsch um: ${{ inputs.prompt }}."
 
